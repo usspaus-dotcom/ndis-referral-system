@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "nodemon --watch server --ext ts,js --exec \"node --loader ts-node/esm server/index.ts\"",
     "dev:client": "cd client && vite",
-    "build": "cd client && vite build && cd .. && tsc -p tsconfig.server.json",
+    "build": "cd client && npm install && npx vite build && cd .. && npx tsc -p tsconfig.server.json",
     "build:client": "cd client && vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "start": "node dist/server/server/index.js",
