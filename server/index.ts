@@ -364,7 +364,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // ── Serve React Frontend ──────────────────────────────────────────────────────
-const clientDist = path.join(__dirname, "../../client/dist");
+const clientDist = path.join(__dirname, "../../../client/dist");
 app.use(express.static(clientDist));
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientDist, "index.html"));
