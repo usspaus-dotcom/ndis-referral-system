@@ -8,6 +8,8 @@ import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import { signToken, requireAuth, requireAdmin } from "./auth.js";
 import * as db from "./db.js";
+import { pool } from "./db.js";
+import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -370,8 +372,53 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(clientDist, "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+async function startServer() {
+  // Auto-run migrations and seed admin on startup
+  try {
+    const migrationSQL = fs.readFileSync(
+      path.join(__dirname, "../../../drizzle/0001_init.sql"),
+      "utf8"
+    );
+    const client = await pool.connect();
+    try {
+      // Run migration statements one by one
+      const stmts = migrationSQL
+        .split(";")
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0 && !s.startsWith("--"));
+      for (const stmt of stmts) {
+        try { await client.query(stmt); } catch (e: any) {
+          // Ignore "already exists" errors
+          if (!e.message?.includes("already exists")) console.warn("Migration warn:", e.message);
+        }
+      }
+      console.log("[startup] Migrations applied");
+
+      // Seed admin user if not exists
+      const existing = await client.query("SELECT id FROM users WHERE email = $1", ["accuratehomecare.cs@gmail.com"]);
+      if (existing.rows.length === 0) {
+        const bcrypt = await import("bcryptjs");
+        const hash = await bcrypt.default.hash("Sanjaya7777777$", 12);
+        await client.query(
+          "INSERT INTO users (email, password_hash, name, role, created_at) VALUES ($1, $2, $3, $4, $5)",
+          ["accuratehomecare.cs@gmail.com", hash, "Sanjaya Admin", "admin", Date.now()]
+        );
+        console.log("[startup] Admin user seeded");
+      } else {
+        console.log("[startup] Admin user already exists");
+      }
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("[startup] Migration/seed error:", err);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+startServer();
 
 export default app;
