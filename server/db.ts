@@ -3,7 +3,12 @@ import { Pool } from "pg";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import * as schema from "../drizzle/schema.js";
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('render.com') || process.env.DATABASE_URL?.includes('sslmode=require')
+    ? { rejectUnauthorized: false }
+    : false,
+});
 export const db = drizzle(pool, { schema });
 
 // ── Users ─────────────────────────────────────────────────────────────────────
