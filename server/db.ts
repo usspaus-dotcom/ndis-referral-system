@@ -3,11 +3,13 @@ import { Pool } from "pg";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import * as schema from "../drizzle/schema.js";
 
+// Use SSL for Render (internal URL contains 'dpg-'), external Render, Neon, or sslmode=require
+const dbUrl = process.env.DATABASE_URL || '';
+const useSSL = dbUrl.includes('render.com') || dbUrl.includes('neon.tech') ||
+  dbUrl.includes('sslmode=require') || dbUrl.includes('dpg-');
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('render.com') || process.env.DATABASE_URL?.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : false,
+  connectionString: dbUrl,
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
 });
 export const db = drizzle(pool, { schema });
 
