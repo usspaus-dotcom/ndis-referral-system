@@ -1,7 +1,14 @@
 -- NDIS Referral System — Initial Schema Migration
 
-CREATE TYPE IF NOT EXISTS lead_status AS ENUM ('pending', 'contacted', 'enrolled', 'paid');
-CREATE TYPE IF NOT EXISTS user_role AS ENUM ('admin', 'staff');
+DO $$ BEGIN
+  CREATE TYPE lead_status AS ENUM ('pending', 'contacted', 'enrolled', 'paid');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('admin', 'staff');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,

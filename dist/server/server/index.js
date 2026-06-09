@@ -386,19 +386,26 @@ async function startServer() {
         const migrationSQL = fs.readFileSync(path.join(__dirname, "../../../drizzle/0001_init.sql"), "utf8");
         const client = await pool.connect();
         try {
-            // Run migration statements one by one
-            const stmts = migrationSQL
-                .split(";")
-                .map((s) => s.trim())
-                .filter((s) => s.length > 0 && !s.startsWith("--"));
-            for (const stmt of stmts) {
-                try {
-                    await client.query(stmt);
-                }
-                catch (e) {
-                    // Ignore "already exists" errors
-                    if (!e.message?.includes("already exists"))
-                        console.warn("Migration warn:", e.message);
+            // Run entire migration SQL as one query (supports DO $$ blocks)
+            try {
+                await client.query(migrationSQL);
+            }
+            catch (e) {
+                // If full run fails, try statement by statement (skip DO blocks)
+                console.warn("[startup] Full migration failed, trying per-statement:", e.message);
+                const stmts = migrationSQL
+                    .split(/;(?![^$]*\$\$)/)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0 && !s.startsWith("--"));
+                for (const stmt of stmts) {
+                    try {
+                        await client.query(stmt);
+                    }
+                    catch (e2) {
+                        if (!e2.message?.includes("already exists") && !e2.message?.includes("duplicate")) {
+                            console.warn("Migration warn:", e2.message);
+                        }
+                    }
                 }
             }
             console.log("[startup] Migrations applied");

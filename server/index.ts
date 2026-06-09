@@ -381,15 +381,22 @@ async function startServer() {
     );
     const client = await pool.connect();
     try {
-      // Run migration statements one by one
-      const stmts = migrationSQL
-        .split(";")
-        .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0 && !s.startsWith("--"));
-      for (const stmt of stmts) {
-        try { await client.query(stmt); } catch (e: any) {
-          // Ignore "already exists" errors
-          if (!e.message?.includes("already exists")) console.warn("Migration warn:", e.message);
+      // Run entire migration SQL as one query (supports DO $$ blocks)
+      try {
+        await client.query(migrationSQL);
+      } catch (e: any) {
+        // If full run fails, try statement by statement (skip DO blocks)
+        console.warn("[startup] Full migration failed, trying per-statement:", e.message);
+        const stmts = migrationSQL
+          .split(/;(?![^$]*\$\$)/)
+          .map((s: string) => s.trim())
+          .filter((s: string) => s.length > 0 && !s.startsWith("--"));
+        for (const stmt of stmts) {
+          try { await client.query(stmt); } catch (e2: any) {
+            if (!e2.message?.includes("already exists") && !e2.message?.includes("duplicate")) {
+              console.warn("Migration warn:", e2.message);
+            }
+          }
         }
       }
       console.log("[startup] Migrations applied");
