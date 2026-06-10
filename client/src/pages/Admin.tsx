@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import {
   Users, MessageSquare, BarChart3, LogOut, Heart, CheckCircle,
   Clock, DollarSign, X, ChevronDown, Copy, Send, RefreshCw,
-  Phone, Mail, MapPin, User, Gift, FileText, AlertCircle
+  Phone, Mail, MapPin, User, Gift, FileText, AlertCircle, ExternalLink
 } from "lucide-react";
 
 type Tab = "clients" | "conversations";
@@ -169,6 +169,14 @@ export default function Admin() {
               <span className="flex-1 text-left">Analytics</span>
               <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">New</span>
             </button>
+          </div>
+
+          <div className="pt-2 border-t border-slate-700">
+            <a href="https://ndis-referral-system.onrender.com" target="_blank" rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-emerald-400 hover:bg-slate-800 cursor-pointer">
+              <ExternalLink className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 text-left">View Website</span>
+            </a>
           </div>
         </nav>
 
