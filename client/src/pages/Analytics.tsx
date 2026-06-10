@@ -247,22 +247,22 @@ export default function Analytics() {
                     <tr><td colSpan={8} className="text-center py-12 text-slate-400">No leads yet.</td></tr>
                   ) : recentLeads.map(lead => (
                     <tr key={lead.id} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{lead.participant_name}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{lead.participantName}</td>
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{lead.suburb ? `${lead.suburb}, ${lead.state || ""}` : "—"}</td>
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                        {lead.ip_city ? <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-blue-400" />{lead.ip_city}, {lead.ip_state}</span> : "—"}
+                        {lead.ipCity ? <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-blue-400" />{lead.ipCity}, {lead.ipState}</span> : "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{lead.disability_type || "—"}</td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{lead.referrer_name || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{lead.disabilityType || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{lead.referrerName || "—"}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">{lead.referral_source || "Direct"}</span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">{lead.referralSource || "Direct"}</span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`text-xs px-2 py-1 rounded-full font-semibold ${lead.status === "enrolled" || lead.status === "paid" ? "bg-green-100 text-green-700" : lead.status === "contacted" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>
                           {lead.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(lead.created_at).toLocaleDateString("en-AU")}</td>
+                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(Number(lead.createdAt)).toLocaleDateString("en-AU")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -359,7 +359,7 @@ export default function Analytics() {
                     {referrers.length === 0 ? (
                       <tr><td colSpan={7} className="text-center py-12 text-slate-400">No referrer data yet.</td></tr>
                     ) : referrers.map((ref, i) => {
-                      const conv = Number(ref.total_leads) > 0 ? ((Number(ref.enrolled) / Number(ref.total_leads)) * 100).toFixed(0) : "0";
+                      const conv = Number(ref.totalLeads ?? ref.total_leads) > 0 ? ((Number(ref.enrolled) / Number(ref.totalLeads ?? ref.total_leads)) * 100).toFixed(0) : "0";
                       return (
                         <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="px-4 py-3">
@@ -368,18 +368,18 @@ export default function Analytics() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-medium text-slate-900">{ref.referrer_name}</div>
-                            {ref.referrer_email && <div className="text-xs text-slate-400">{ref.referrer_email}</div>}
+                            <div className="font-medium text-slate-900">{ref.referrerName || ref.referrer_name}</div>
+                            {(ref.referrerEmail || ref.referrer_email) && <div className="text-xs text-slate-400">{ref.referrerEmail || ref.referrer_email}</div>}
                           </td>
-                          <td className="px-4 py-3 font-bold text-slate-900">{ref.total_leads}</td>
+                          <td className="px-4 py-3 font-bold text-slate-900">{ref.totalLeads ?? ref.total_leads}</td>
                           <td className="px-4 py-3 font-bold text-green-600">{ref.enrolled}</td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-bold px-2 py-1 rounded-full ${Number(conv) >= 50 ? "bg-green-100 text-green-700" : Number(conv) >= 25 ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
                               {conv}%
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-amber-600 font-semibold">{ref.gift_cards_sent} sent</td>
-                          <td className="px-4 py-3 font-bold text-purple-600">${Number(ref.total_earned).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-amber-600 font-semibold">{ref.giftCardsSent ?? ref.gift_cards_sent ?? 0} sent</td>
+                          <td className="px-4 py-3 font-bold text-purple-600">${Number(ref.totalEarned ?? ref.total_earned ?? 0).toLocaleString()}</td>
                         </tr>
                       );
                     })}

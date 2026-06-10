@@ -260,12 +260,12 @@ export default function Admin() {
                     ) : leads.map(lead => (
                       <tr key={lead.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
                         <td className="px-4 py-3">
-                          <div className="font-medium text-slate-900">{lead.participant_name}</div>
-                          <div className="text-xs text-slate-400">{lead.participant_phone}</div>
+                          <div className="font-medium text-slate-900">{lead.participantName}</div>
+                          <div className="text-xs text-slate-400">{lead.participantPhone}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="text-slate-700">{lead.referrer_name || "—"}</div>
-                          <div className="text-xs text-slate-400">{lead.referrer_relation || ""}</div>
+                          <div className="text-slate-700">{lead.referrerName || "—"}</div>
+                          <div className="text-xs text-slate-400">{lead.referrerRelation || ""}</div>
                         </td>
                         <td className="px-4 py-3 text-slate-600">{lead.suburb ? `${lead.suburb}, ${lead.state || ""}` : "—"}</td>
                         <td className="px-4 py-3">
@@ -273,7 +273,7 @@ export default function Admin() {
                             {lead.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-slate-500 text-xs">{new Date(lead.created_at).toLocaleDateString("en-AU")}</td>
+                        <td className="px-4 py-3 text-slate-500 text-xs">{new Date(Number(lead.createdAt)).toLocaleDateString("en-AU")}</td>
                         <td className="px-4 py-3">
                           <select
                             value={lead.status}
@@ -323,7 +323,7 @@ export default function Admin() {
                           {session.status}
                         </span>
                       </div>
-                      <div className="text-xs text-slate-400">{new Date(session.updated_at).toLocaleString("en-AU")}</div>
+                      <div className="text-xs text-slate-400">{new Date(Number(session.updatedAt || session.updated_at)).toLocaleString("en-AU")}</div>
                     </button>
                   ))}
                 </div>
@@ -405,23 +405,23 @@ export default function Admin() {
               <div>
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Participant</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-slate-700"><User className="w-4 h-4 text-slate-400" /> {selectedLead.participant_name}</div>
-                  <div className="flex items-center gap-2 text-slate-700"><Phone className="w-4 h-4 text-slate-400" /> {selectedLead.participant_phone}</div>
-                  {selectedLead.participant_email && <div className="flex items-center gap-2 text-slate-700"><Mail className="w-4 h-4 text-slate-400" /> {selectedLead.participant_email}</div>}
+                  <div className="flex items-center gap-2 text-slate-700"><User className="w-4 h-4 text-slate-400" /> {selectedLead.participantName}</div>
+                  <div className="flex items-center gap-2 text-slate-700"><Phone className="w-4 h-4 text-slate-400" /> {selectedLead.participantPhone}</div>
+                  {selectedLead.participantEmail && <div className="flex items-center gap-2 text-slate-700"><Mail className="w-4 h-4 text-slate-400" /> {selectedLead.participantEmail}</div>}
                   {selectedLead.suburb && <div className="flex items-center gap-2 text-slate-700"><MapPin className="w-4 h-4 text-slate-400" /> {selectedLead.suburb}, {selectedLead.state}</div>}
-                  {selectedLead.disability_type && <div className="flex items-center gap-2 text-slate-700"><AlertCircle className="w-4 h-4 text-slate-400" /> {selectedLead.disability_type}</div>}
-                  {selectedLead.age && <div className="text-slate-600">Age: {selectedLead.age} · NDIS: {selectedLead.ndis_status || "—"} · Citizenship: {selectedLead.citizenship || "—"}</div>}
+                  {selectedLead.disabilityType && <div className="flex items-center gap-2 text-slate-700"><AlertCircle className="w-4 h-4 text-slate-400" /> {selectedLead.disabilityType}</div>}
+                  {selectedLead.age && <div className="text-slate-600">Age: {selectedLead.age} · NDIS: {selectedLead.ndisStatus || "—"} · Citizenship: {selectedLead.citizenship || "—"}</div>}
                 </div>
               </div>
 
               {/* Referrer */}
-              {selectedLead.referrer_name && (
+              {selectedLead.referrerName && (
                 <div>
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Referrer</h3>
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-slate-700"><User className="w-4 h-4 text-slate-400" /> {selectedLead.referrer_name} ({selectedLead.referrer_relation || "—"})</div>
-                    <div className="flex items-center gap-2 text-slate-700"><Phone className="w-4 h-4 text-slate-400" /> {selectedLead.referrer_phone}</div>
-                    {selectedLead.referrer_email && <div className="flex items-center gap-2 text-slate-700"><Mail className="w-4 h-4 text-slate-400" /> {selectedLead.referrer_email}</div>}
+                    <div className="flex items-center gap-2 text-slate-700"><User className="w-4 h-4 text-slate-400" /> {selectedLead.referrerName} ({selectedLead.referrerRelation || "—"})</div>
+                    <div className="flex items-center gap-2 text-slate-700"><Phone className="w-4 h-4 text-slate-400" /> {selectedLead.referrerPhone}</div>
+                    {selectedLead.referrerEmail && <div className="flex items-center gap-2 text-slate-700"><Mail className="w-4 h-4 text-slate-400" /> {selectedLead.referrerEmail}</div>}
                   </div>
                 </div>
               )}
@@ -431,20 +431,20 @@ export default function Admin() {
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Commission</h3>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="text-lg font-black text-slate-900">${selectedLead.gross_commission || 1000}</div>
+                    <div className="text-lg font-black text-slate-900">${selectedLead.grossCommission || 1000}</div>
                     <div className="text-xs text-slate-500">Gross</div>
                   </div>
                   <div className="bg-amber-50 rounded-xl p-3">
-                    <div className="text-lg font-black text-amber-600">${selectedLead.referrer_payout || 200}</div>
+                    <div className="text-lg font-black text-amber-600">${selectedLead.referrerPayout || 200}</div>
                     <div className="text-xs text-slate-500">Gift Card</div>
                   </div>
                   <div className="bg-green-50 rounded-xl p-3">
-                    <div className="text-lg font-black text-green-600">${selectedLead.net_commission || 800}</div>
+                    <div className="text-lg font-black text-green-600">${selectedLead.netCommission || 800}</div>
                     <div className="text-xs text-slate-500">Your Net</div>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
-                  <input type="checkbox" id="giftcard" checked={!!selectedLead.gift_card_sent}
+                  <input type="checkbox" id="giftcard" checked={!!selectedLead.giftCardSent}
                     onChange={e => handleGiftCard(selectedLead.id, e.target.checked)}
                     className="w-4 h-4 accent-amber-500" />
                   <label htmlFor="giftcard" className="text-sm text-slate-700 flex items-center gap-1.5">
