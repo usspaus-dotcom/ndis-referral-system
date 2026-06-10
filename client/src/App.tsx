@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import DailyContent from "./pages/DailyContent";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/content" element={<DailyContent />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>

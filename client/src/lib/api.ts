@@ -100,4 +100,12 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(settings),
     }),
+
+  // Daily Content
+  generateContent: (postType?: string) =>
+    request<{ post: any }>("/content/generate", {
+      method: "POST",
+      body: JSON.stringify({ postType }),
+    }),
+  getContentHistory: () => request<{ posts: any[] }>("/content/history"),
 };

@@ -391,6 +391,158 @@ app.put("/api/settings", requireAdmin, async (req, res) => {
   }
 });
 
+// ── Daily Content Generator ────────────────────────────────────────────────
+const POST_TYPES = [
+  "NDIS News Update",
+  "Disability Awareness Tip",
+  "Referral Program Promo",
+  "Service Highlight",
+  "Motivational & Inspiring",
+  "NDIS Funding Tip",
+  "Community Support Story",
+];
+
+// Fetch latest NDIS news headlines from Google News RSS
+async function fetchNDISNews(): Promise<string[]> {
+  try {
+    const res = await fetch(
+      "https://news.google.com/rss/search?q=NDIS+Australia&hl=en-AU&gl=AU&ceid=AU:en",
+      { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(8000) }
+    );
+    const xml = await res.text();
+    const titles: string[] = [];
+    const titleRegex = /<item>[\s\S]*?<title><!\[CDATA\[([^\]]+)\]\]><\/title>|<item>[\s\S]*?<title>([^<]+)<\/title>/g;
+    let match;
+    while ((match = titleRegex.exec(xml)) !== null && titles.length < 8) {
+      const t = (match[1] || match[2] || "").trim();
+      if (t && !t.includes("Google News")) titles.push(t);
+    }
+    // Fallback: simple split approach
+    if (titles.length === 0) {
+      const parts = xml.split("<item>");
+      for (let i = 1; i < parts.length && titles.length < 8; i++) {
+        const m = parts[i].match(/<title>(?:<!\[CDATA\[)?([^\]<]+)(?:\]\]>)?<\/title>/);
+        if (m && m[1] && !m[1].includes("Google")) titles.push(m[1].trim());
+      }
+    }
+    return titles;
+  } catch (e) {
+    return [];
+  }
+}
+
+app.get("/api/content/history", requireAdmin, async (req, res) => {
+  try {
+    const rows = await pool.query(
+      "SELECT * FROM daily_content ORDER BY created_at DESC LIMIT 14"
+    );
+    res.json({ posts: rows.rows });
+  } catch (err) {
+    console.error("Content history error:", err);
+    res.status(500).json({ error: "Failed to fetch content history" });
+  }
+});
+
+app.post("/api/content/generate", requireAdmin, async (req, res) => {
+  try {
+    const { postType } = req.body;
+    const type = postType || POST_TYPES[new Date().getDay() % POST_TYPES.length];
+
+    // Fetch live NDIS news headlines
+    const newsHeadlines = await fetchNDISNews();
+    const newsContext = newsHeadlines.length > 0
+      ? `Current NDIS news headlines (use these as inspiration):\n${newsHeadlines.slice(0, 5).map((h, i) => `${i + 1}. ${h}`).join("\n")}`
+      : "";
+
+    const baseInstructions = `You are a social media expert for Accurate Home Care, an NDIS provider in Melbourne, VIC, Australia.
+Phone: 0420 686 964 | Website: ndis-referral-system.onrender.com
+${newsContext}
+
+Generate a Facebook Reel post for post type: "${type}"
+
+Return ONLY a JSON object with exactly these 4 fields (no markdown, no code blocks):
+{
+  "hook": "1-2 punchy lines that stop the scroll. Use an emoji. Make it bold and attention-grabbing.",
+  "main_text": "3-4 lines of the core message. Engaging, warm, informative. Reference current NDIS news if relevant.",
+  "description_hashtags": "2-3 lines of description followed by a blank line then 8-10 relevant hashtags. Include #NDIS #AccurateHomeCare #Melbourne #DisabilitySupport",
+  "first_comment": "A ready-to-paste first comment with 5-6 additional hashtags and a short CTA like 'Drop a ❤️ if this helped you!' or 'Tag someone who needs to see this!'"
+}`;
+
+    let hook = "", mainText = "", descHashtags = "", firstComment = "";
+
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: baseInstructions }],
+            max_tokens: 600,
+            response_format: { type: "json_object" }
+          }),
+        });
+        const aiData = await aiRes.json() as any;
+        const parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
+        hook = parsed.hook || "";
+        mainText = parsed.main_text || "";
+        descHashtags = parsed.description_hashtags || "";
+        firstComment = parsed.first_comment || "";
+      } catch (e) { /* fall through to fallback */ }
+    }
+
+    // Fallback structured content when no AI key or AI fails
+    if (!hook) {
+      const newsLine = newsHeadlines.length > 0 ? newsHeadlines[0].replace(/ - [^-]+$/, "") : "";
+      const fallbacks: Record<string, { hook: string; main_text: string; description_hashtags: string; first_comment: string }> = {
+        "NDIS News Update": {
+          hook: `📢 NDIS UPDATE YOU NEED TO KNOW ABOUT!\n${newsLine ? `"${newsLine}"` : "Big changes are coming to the NDIS in 2026!"}`,
+          main_text: `The NDIS is constantly evolving to better support Australians with disability.\n\nAt Accurate Home Care, we stay across every update so your plan works harder for you.\n\nNot sure how the latest changes affect you? Our team is here to help — no jargon, just clear answers.\n\n📞 Call us: 0420 686 964`,
+          description_hashtags: `Stay informed about the latest NDIS changes with Accurate Home Care — Melbourne's trusted NDIS provider.\n\n#NDIS #NDISAustralia #AccurateHomeCare #Melbourne #DisabilitySupport #NDISProvider #NDISNews #DisabilityCare #SupportWorker #NDISParticipant`,
+          first_comment: `💬 Have questions about the latest NDIS changes? Drop them below and we'll answer!\n\n#NDISHelp #NDISMelbourne #DisabilityAdvocacy #NDISFunding #AccurateHomeCare`,
+        },
+        "Referral Program Promo": {
+          hook: `🎁 EARN $200 JUST FOR HELPING SOMEONE!\nKnow someone who needs NDIS support? We'll reward you for it.`,
+          main_text: `Refer a friend, family member, or client to Accurate Home Care and receive a $200 gift card when they enrol as an NDIS participant!\n\n✅ Simple referral process\n✅ We handle everything\n✅ $200 gift card guaranteed on enrolment\n\n📞 Call: 0420 686 964`,
+          description_hashtags: `Accurate Home Care's referral program rewards you for connecting people with the NDIS support they deserve. Melbourne-based, Australia-wide support.\n\n#NDISReferral #GiftCard #NDIS #AccurateHomeCare #Melbourne #DisabilitySupport #NDISProvider #EarnRewards #ReferAFriend #NDISAustralia`,
+          first_comment: `Tag someone who might benefit from NDIS support! You could earn $200 🎁\n\n#NDISMelbourne #NDISHelp #DisabilityCommunity #AccurateHomeCare #NDISFunding`,
+        },
+        "Disability Awareness Tip": {
+          hook: `💡 NDIS TIP MOST PEOPLE DON'T KNOW!\nYour NDIS funding covers WAY more than you think.`,
+          main_text: `Did you know NDIS participants can use funding for community participation, social activities, and building independence — not just personal care?\n\nMany families miss out on thousands in funding simply because they don't know what's available.\n\nAt Accurate Home Care, we help you understand and maximise every dollar of your NDIS plan.\n\n📞 Call: 0420 686 964`,
+          description_hashtags: `Helping NDIS participants and families in Melbourne understand their rights and maximise their funding.\n\n#NDIS #DisabilityAwareness #NDISTips #AccurateHomeCare #Melbourne #NDISSupport #DisabilityCare #InclusionMatters #NDISFunding #DisabilityRights`,
+          first_comment: `Drop a ❤️ if this helped you! Share with someone who needs to know this.\n\n#NDISAustralia #NDISParticipant #DisabilityAdvocacy #AccurateHomeCare #NDISMelbourne`,
+        },
+      };
+      const fb = fallbacks[type] || fallbacks["NDIS News Update"];
+      hook = fb.hook; mainText = fb.main_text; descHashtags = fb.description_hashtags; firstComment = fb.first_comment;
+    }
+
+    const content = JSON.stringify({ hook, main_text: mainText, description_hashtags: descHashtags, first_comment: firstComment });
+
+    // Save to database
+    await pool.query(
+      "INSERT INTO daily_content (post_type, content, created_at) VALUES ($1, $2, $3)",
+      [type, content, Date.now()]
+    );
+
+    res.json({
+      post: {
+        post_type: type,
+        hook,
+        main_text: mainText,
+        description_hashtags: descHashtags,
+        first_comment: firstComment,
+        news_headlines: newsHeadlines.slice(0, 3),
+        created_at: Date.now()
+      }
+    });
+  } catch (err) {
+    console.error("Content generate error:", err);
+    res.status(500).json({ error: "Failed to generate content" });
+  }
+});
+
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

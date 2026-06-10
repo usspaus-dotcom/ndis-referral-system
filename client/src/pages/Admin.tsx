@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import {
   Users, MessageSquare, BarChart3, LogOut, Heart, CheckCircle,
   Clock, DollarSign, X, ChevronDown, Copy, Send, RefreshCw,
-  Phone, Mail, MapPin, User, Gift, FileText, AlertCircle, ExternalLink, Facebook, Settings
+  Phone, Mail, MapPin, User, Gift, FileText, AlertCircle, ExternalLink, Facebook, Settings, Sparkles
 } from "lucide-react";
 
 type Tab = "clients" | "conversations";
@@ -199,6 +199,11 @@ export default function Admin() {
                 <span className="flex-1 text-left">Add Facebook Page</span>
               </button>
             )}
+            <button onClick={() => navigate("/content")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-amber-400 hover:bg-slate-800 hover:text-amber-300">
+              <Sparkles className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 text-left">Daily Content</span>
+            </button>
             <button onClick={() => navigate("/settings")}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
               <Settings className="w-4 h-4 flex-shrink-0" />
