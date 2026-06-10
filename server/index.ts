@@ -360,6 +360,37 @@ app.patch("/api/chat/sessions/:sessionId/status", requireAdmin, async (req, res)
   }
 });
 
+// ── Settings ────────────────────────────────────────────────────────────────
+app.get("/api/settings", requireAdmin, async (req, res) => {
+  try {
+    const rows = await pool.query("SELECT key, value FROM settings");
+    const settings: Record<string, string> = {};
+    for (const row of rows.rows) {
+      settings[row.key] = row.value || "";
+    }
+    res.json({ settings });
+  } catch (err) {
+    console.error("Settings fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
+
+app.put("/api/settings", requireAdmin, async (req, res) => {
+  try {
+    const updates = req.body as Record<string, string>;
+    for (const [key, value] of Object.entries(updates)) {
+      await pool.query(
+        "INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, $3) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = $3",
+        [key, value, Date.now()]
+      );
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Settings update error:", err);
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

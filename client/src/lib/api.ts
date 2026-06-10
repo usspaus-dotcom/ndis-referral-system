@@ -94,4 +94,10 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ status }),
     }),
+  getSettings: () => request<{ settings: Record<string, string> }>("/settings"),
+  updateSettings: (settings: Record<string, string>) =>
+    request<{ success: boolean }>("/settings", {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
 };

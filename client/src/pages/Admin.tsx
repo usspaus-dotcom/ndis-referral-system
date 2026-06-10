@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import {
   Users, MessageSquare, BarChart3, LogOut, Heart, CheckCircle,
   Clock, DollarSign, X, ChevronDown, Copy, Send, RefreshCw,
-  Phone, Mail, MapPin, User, Gift, FileText, AlertCircle, ExternalLink
+  Phone, Mail, MapPin, User, Gift, FileText, AlertCircle, ExternalLink, Facebook, Settings
 } from "lucide-react";
 
 type Tab = "clients" | "conversations";
@@ -28,6 +28,7 @@ export default function Admin() {
   const [outreachMsg, setOutreachMsg] = useState("");
   const [outreachLoading, setOutreachLoading] = useState(false);
   const [chatSessions, setChatSessions] = useState<any[]>([]);
+  const [facebookUrl, setFacebookUrl] = useState<string>("");
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
@@ -56,7 +57,15 @@ export default function Admin() {
     } catch (err) { console.error(err); }
   }, []);
 
-  useEffect(() => { if (isAuthenticated) { loadLeads(); loadChatSessions(); } }, [isAuthenticated, loadLeads, loadChatSessions]);
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadLeads();
+      loadChatSessions();
+      api.getSettings().then(res => {
+        if (res.settings?.facebook_url) setFacebookUrl(res.settings.facebook_url);
+      }).catch(() => {});
+    }
+  }, [isAuthenticated, loadLeads, loadChatSessions]);
 
   const loadMessages = async (sessionId: string) => {
     try {
@@ -177,6 +186,24 @@ export default function Admin() {
               <ExternalLink className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1 text-left">View Website</span>
             </a>
+            {facebookUrl ? (
+              <a href={facebookUrl} target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-blue-400 hover:bg-slate-800 cursor-pointer">
+                <Facebook className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">Facebook Page</span>
+              </a>
+            ) : (
+              <button onClick={() => navigate("/settings")}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-blue-400 hover:bg-slate-800 opacity-60">
+                <Facebook className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">Add Facebook Page</span>
+              </button>
+            )}
+            <button onClick={() => navigate("/settings")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+              <Settings className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 text-left">Settings</span>
+            </button>
           </div>
         </nav>
 
